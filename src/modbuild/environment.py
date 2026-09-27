@@ -1,0 +1,37 @@
+from pathlib import Path
+import subprocess
+
+class Environment:
+    def __init__(self, cxx='g++', src_dir='src', build_dir='build', cache_dir='build/gcm.cache'):
+        self.compile_commands = [
+            cxx,
+            '-std=c++26',
+            '-Wall',
+            '-fmodules'
+        ]
+        self.link_commands = [
+            cxx,
+            '-std=c++26',
+            '-fmodules'
+        ]
+        self.src_dir = Path(src_dir)
+        self.build_dir = Path(build_dir)
+        self.cache_dir = Path(cache_dir)
+        self.mapper = {}
+        self.mapfile = self.build_dir / 'modules.map'
+
+    def parse_cflags(self, command):
+        """ Execute a command and parse out cflags into compile_commands. """
+        proc = subprocess.run(command, encoding='utf-8', stdout=subprocess.PIPE)
+        self.compile_commands.extend(proc.stdout.split())
+
+    def parse_ldflags(self, command):
+        """ Execute a command and parse out libs into link_commands. """
+        proc = subprocess.run(command, encoding='utf-8', stdout=subprocess.PIPE)
+        self.link_commands.extend(proc.stdout.split())
+
+    def write_mapper(self):
+        """ Write the mapper file out to the filesystem. """
+        with open(self.mapfile, 'w') as mfile:
+            for mapping in self.mapper:
+                mfile.write(f'{mapping} {self.mapper[mapping].gcm()}\n')

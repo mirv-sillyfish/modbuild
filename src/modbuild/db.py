@@ -48,3 +48,10 @@ def db_insert_md5(key, md5):
     cur.execute(''' INSERT INTO MD5 VALUES(?, ?) ''', (key, md5))
     db_con.commit()
     cur.close()
+
+def db_clean():
+    global db_con
+    cur = db_con.cursor()
+    cur.execute(''' DROP TABLE MD5 ''')
+    db_con.commit()
+    cur.close()

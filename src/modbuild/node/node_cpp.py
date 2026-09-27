@@ -37,9 +37,15 @@ class NodeCpp(Node):
         return str(self._gcm)
 
     def build_json(self):
+        """ Build or rebuild a json file describing source dependencies.
+        Build if not already exist, or rebuild if the source file has changed, a json
+        description of the file and any module dependencies it has.
+
+        :returns: True if there was a build action, else False
+        """
         if not self.dirty and self._jsn.exists():
             # The file hasn't changed and the appropriate json exists, don't bother with more.
-            return
+            return False
 
         # Make sure the subdirectoy for the build output exists.
         dirpath = self._jsn.parent
@@ -58,6 +64,7 @@ class NodeCpp(Node):
         full = self.env.compile_commands + builder
         print(' '.join(full))
         subprocess.run(full, encoding='utf-8')
+        return True
 
     def build_map(self):
         with open(self.jsn(), 'r') as jfile:
@@ -76,6 +83,13 @@ class NodeCpp(Node):
                 self.dep_nodes.append(self.env.mapper[dep])
 
     def build_obj(self):
+        """ Build or rebuild an object file.
+        Build if not already exist, or rebuild if the source file has changed, an object
+        file and any dependencies it has
+
+        :returns: True if there was a build action, else False
+        """
+
         # First make sure any dependencies are built.
         for dep in self.dep_nodes:
             if dep.dirty:
@@ -83,6 +97,7 @@ class NodeCpp(Node):
                 self.dirty = True
                 dep.build_obj()
 
+        actioned = False
         if self.dirty or not self._obj.exists():
             # Make sure the target path to the object exists.
             dirpath = self._obj.parent
@@ -98,3 +113,5 @@ class NodeCpp(Node):
             print(' '.join(full))
             subprocess.run(full, encoding='utf-8')
             self.dirty = False
+            actioned = True
+        return actioned

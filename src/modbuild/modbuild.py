@@ -24,6 +24,9 @@ def main():
         print('Could not find modbuild.py file')
         exit(1)
 
+    # TODO: take an md5 of the modbuild.py file and compare it against any existing
+    #       database entry. If the entry doesn't exist or doesn't match, drop the
+    #       whole thing. This will force an entire rebuild of the project.
     db_open(cwd / 'scoms.sqlite')
     runpy.run_path(buildfile)
     db_close()

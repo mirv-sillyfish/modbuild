@@ -15,6 +15,13 @@ class BuilderCpp:
         self.target = env.build_dir / target
 
     def build(self):
+        if not self.env.build_dir.exists():
+            self.env.build_dir.mkdir(parents=True)
+
+        # Run a scan on all nodes to assess md5 state.
+        for node in self.nodes:
+            node.pre_scan()
+
         # Check for any dirty nodes to save on rebuilds.
         actioned = any(node.dirty for node in self.nodes)
 
@@ -51,3 +58,6 @@ class BuilderCpp:
     def clean(self):
         for node in self.nodes:
             node.clean()
+        if self.target.exists():
+            self.target.unlink()
+        self.env.clean()

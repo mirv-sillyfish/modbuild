@@ -9,16 +9,7 @@ def db_open(path):
 
     db_path = path
     db_con = sqlite3.connect(str(path))
-    cur = db_con.cursor()
-    cur.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS MD5 (
-            file TEXT PRIMARY_KEY,
-            hash TEXT
-        )
-        ''')
-    db_con.commit()
-    cur.close()
+    db_create_tables()
 
 def db_close():
     global db_con
@@ -53,5 +44,12 @@ def db_clean():
     global db_con
     cur = db_con.cursor()
     cur.execute(''' DROP TABLE MD5 ''')
+    db_con.commit()
+    cur.close()
+    db_create_tables()
+
+def db_create_tables():
+    cur = db_con.cursor()
+    cur.execute(''' CREATE TABLE IF NOT EXISTS MD5 (file TEXT PRIMARY_KEY, hash TEXT) ''')
     db_con.commit()
     cur.close()

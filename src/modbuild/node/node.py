@@ -17,11 +17,11 @@ class Node:
         self._src = env.src_dir / src
 
         self.dep_nodes = []
-
-        self._md5 = self.md5()
         self.dirty = True
 
+    def pre_scan(self):
         cur = db_con.cursor()
+        self._md5 = self.md5()
         md5 = cur.execute(''' SELECT hash FROM MD5 WHERE file=? ''', (self.src(),)).fetchone()
         if md5:
             if md5[0] == self._md5:
@@ -42,7 +42,7 @@ class Node:
         return md5
 
     def md5(self):
-        return self._hash(self._src)
+        return self._hash(self.src())
 
     def src(self):
         return str(self._src)

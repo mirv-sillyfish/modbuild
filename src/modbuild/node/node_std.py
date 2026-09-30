@@ -22,7 +22,7 @@ class NodeStd(NodeCpp):
         # std won't have dependencies on this project.
         pass
 
-    def build_obj(self):
+    def _build_obj(self):
         if not self.dirty and self._obj.exists():
             return
 
@@ -40,3 +40,6 @@ class NodeStd(NodeCpp):
         print(' '.join(full))
         subprocess.run(full, encoding='utf-8')
         self.dirty = False
+
+    def build_obj(self):
+        self._build_obj()

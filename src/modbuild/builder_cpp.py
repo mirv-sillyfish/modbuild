@@ -1,3 +1,5 @@
+import concurrent.futures
+import os
 import subprocess
 import sqlite3
 
@@ -24,13 +26,17 @@ class BuilderCpp:
 
         # Check for any dirty nodes to save on rebuilds.
         actioned = any(node.dirty for node in self.nodes)
-
         if not actioned and self.target.exists():
             return
 
+        cpu_count = os.cpu_count()
+        workers = cpu_count if cpu_count else 1
+
         # Build the json descriptions of the modules and their dependencies.
-        for node in self.nodes:
-            node.build_json()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            for node in self.nodes:
+                # node.build_json()
+                executor.submit(node.build_json)
 
         # Build the memory map, and write it out to file.
         for node in self.nodes:
@@ -43,8 +49,22 @@ class BuilderCpp:
             node.build_deps()
 
         # Build any object not already built.
+        # Build all nodes with dependencies immediately.
+        '''
         for node in self.nodes:
             node.build_obj()
+        '''
+
+        # Iteratively build nodes with satisfied dependencies until all nodes are built.
+        # Builds nodes in parallel where possible. Not terribly efficient as it recreates
+        # the executor each iteration, but gets the jobs done.
+        dirty_nodes = [node for node in self.nodes]
+        while len(dirty_nodes) > 0:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                for node in dirty_nodes:
+                    node.build_obj_submit(executor)
+            # Reduce the nodes to those which are considered dirty.
+            dirty_nodes = [node for node in dirty_nodes if node.dirty]
 
         # Finally build the executable.
         object_files = [node.obj() for node in self.nodes]

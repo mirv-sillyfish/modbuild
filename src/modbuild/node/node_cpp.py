@@ -87,22 +87,9 @@ class NodeCpp(Node):
             if dep in self.env.mapper:
                 self.dep_nodes.append(self.env.mapper[dep])
 
-    def build_obj(self):
-        """ Build or rebuild an object file.
-        Build if not already exist, or rebuild if the source file has changed, an object
-        file and any dependencies it has
-
-        :returns: True if there was a build action, else False
+    def _build_obj(self):
+        """ Perform a build of this object assuming all dependencies are satisfied.
         """
-
-        # First make sure any dependencies are built.
-        for dep in self.dep_nodes:
-            if dep.dirty:
-                # If a dependency is dirty, then this node will need rebuilding too.
-                self.dirty = True
-                dep.build_obj()
-
-        actioned = False
         if self.dirty or not self._obj.exists():
             # Make sure the target path to the object exists.
             dirpath = self._obj.parent
@@ -118,8 +105,34 @@ class NodeCpp(Node):
             print(' '.join(full))
             subprocess.run(full, encoding='utf-8')
             self.dirty = False
-            actioned = True
-        return actioned
+
+    def build_obj(self):
+        """ Build or rebuild an object file.
+        Build if not already exist, or rebuild if the source file has changed, an object
+        file and any dependencies it has
+        """
+
+        # First make sure any dependencies are built.
+        for dep in self.dep_nodes:
+            if dep.dirty:
+                # If a dependency is dirty, then this node will need rebuilding too.
+                self.dirty = True
+                dep.build_obj()
+
+        self._build_obj()
+
+    def build_obj_submit(self, executor):
+        """ Traverse dependencies and submit build task if possible.
+        Iterates over the existing dependencies; if all dependencies are clean
+        then submit a build task for (this) node.
+        """
+        dirty_nodes = [dep for dep in self.dep_nodes if dep.dirty]
+        if len(dirty_nodes) == 0:
+            executor.submit(self._build_obj)
+        else:
+            self.dirty = True
+            for dep in dirty_nodes:
+                dep.build_obj_submit(executor)
 
 
 

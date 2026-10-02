@@ -50,14 +50,15 @@ class BuilderCpp:
 
         # Build any object not already built.
         # Build all nodes with dependencies immediately.
-        '''
         for node in self.nodes:
             node.build_obj()
-        '''
 
+        '''
         # Iteratively build nodes with satisfied dependencies until all nodes are built.
         # Builds nodes in parallel where possible. Not terribly efficient as it recreates
         # the executor each iteration, but gets the jobs done.
+        # ....or not, because something goes wrong. Not entirely sure what and late night
+        # tired staring at the screen won't fix it anytime soon.
         dirty_nodes = [node for node in self.nodes]
         while len(dirty_nodes) > 0:
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
@@ -65,6 +66,7 @@ class BuilderCpp:
                     node.build_obj_submit(executor)
             # Reduce the nodes to those which are considered dirty.
             dirty_nodes = [node for node in dirty_nodes if node.dirty]
+        '''
 
         # Finally build the executable.
         object_files = [node.obj() for node in self.nodes]
